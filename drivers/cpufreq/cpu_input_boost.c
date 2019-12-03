@@ -397,7 +397,7 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 		policy->min = get_min_freq(policy);
 		disable_schedtune_boost("top-app", true);
 		/* Enable EAS behaviour */
-		energy_aware_enable = true;
+		set_energy_aware_enable_status(true);
 		/* UFS unboost */
 		set_ufshcd_clkgate_enable_status(1);
 		/* CPUBW unboost */
@@ -419,7 +419,7 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 	/* Do powerhal boost for powerhal_max_boost */
 	if (test_bit(POWERHAL_MAX_BOOST, &b->state)) {
 		/* Disable EAS behaviour */
-		energy_aware_enable = false;
+		set_energy_aware_enable_status(false);
 
 		/* UFS boost */
 		set_ufshcd_clkgate_enable_status(0);
@@ -445,7 +445,7 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 		pm_qos_update_request(&b->pm_qos_req, 44);
 	} else {
 		/* Enable EAS behaviour */
-		energy_aware_enable = true;
+		set_energy_aware_enable_status(true);
 
 		/* GPU unboost */
 		/* Disable KGSL_PWRFLAGS_POWER_ON */
