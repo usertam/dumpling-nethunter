@@ -161,13 +161,7 @@ static int RightVee_gesture;		/* < */
 static int DouSwip_gesture;		/* || */
 static int Circle_gesture;		/* O */
 static int UpVee_gesture;		/* V */
-static int DownVee_gesture;		/* ^ */
 static int DouTap_gesture;		/* double tap */
-
-static int Left2RightSwip_gesture;	/* --> */
-static int Right2LeftSwip_gesture;	/* <-- */
-static int Up2DownSwip_gesture;	/* |v */
-static int Down2UpSwip_gesture;	/* |^ */
 
 static int Wgestrue_gesture;		/* W */
 static int Mgestrue_gesture;		/* M */
