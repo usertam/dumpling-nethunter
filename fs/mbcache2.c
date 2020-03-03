@@ -74,13 +74,33 @@ int mb2_cache_entry_create(struct mb2_cache *cache, gfp_t mask, u32 key,
 			return -EBUSY;
 		}
 	}
+	list_add(&req.lnode, &bucket->req_list);
+	hlist_bl_unlock(head);
+
+	entry = kmem_cache_alloc(mb2_entry_cache, mask);
+	if (!entry) {
+		hlist_bl_lock(head);
+		list_del(&req.lnode);
+		hlist_bl_unlock(head);
+		return -ENOMEM;
+	}
+
+	*entry = (typeof(*entry)){
+		.e_lru_list = LIST_HEAD_INIT(entry->e_lru_list),
+		/* One ref for hash, one ref returned */
+		.e_refcnt = ATOMIC_INIT(2),
+		.e_key = key,
+		.e_block = block,
+		.e_hash_list_head = head
+	};
+
+	hlist_bl_lock(head);
+	list_del(&req.lnode);
 	hlist_bl_add_head(&entry->e_hash_list, head);
 	hlist_bl_unlock(head);
 
 	spin_lock(&cache->c_lru_list_lock);
 	list_add_tail(&entry->e_lru_list, &cache->c_lru_list);
-	/* Grab ref for LRU list */
-	atomic_inc(&entry->e_refcnt);
 	cache->c_entry_count++;
 	spin_unlock(&cache->c_lru_list_lock);
 
