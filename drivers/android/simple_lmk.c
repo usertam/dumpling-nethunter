@@ -84,12 +84,8 @@ static unsigned long get_total_mm_pages(struct mm_struct *mm)
 	return pages;
 }
 
-<<<<<<< HEAD
-static unsigned long find_victims(int *vindex, short target_adj)
-=======
 static unsigned long find_victims(int *vindex, short target_adj_min,
 				  short target_adj_max)
->>>>>>> cdfdb4e09412f4d0a42f467a961516b9edb8a157
 {
 	unsigned long pages_found = 0;
 	int old_vindex = *vindex;
@@ -110,12 +106,8 @@ static unsigned long find_victims(int *vindex, short target_adj_min,
 		 * trying to lock a task that we locked earlier.
 		 */
 		sig = tsk->signal;
-<<<<<<< HEAD
-		if (READ_ONCE(sig->oom_score_adj) != target_adj ||
-=======
 		adj = READ_ONCE(sig->oom_score_adj);
 		if (adj < target_adj_min || adj > target_adj_max - 1 ||
->>>>>>> cdfdb4e09412f4d0a42f467a961516b9edb8a157
 		    sig->flags & (SIGNAL_GROUP_EXIT | SIGNAL_GROUP_COREDUMP) ||
 		    (thread_group_empty(tsk) && tsk->flags & PF_EXITING) ||
 		    vtsk_is_duplicate(*vindex, tsk))
@@ -278,11 +270,6 @@ static int simple_lmk_reclaim_thread(void *data)
 
 void simple_lmk_mm_freed(struct mm_struct *mm)
 {
-<<<<<<< HEAD
-	if (kswapd_priority == CONFIG_ANDROID_SIMPLE_LMK_AGGRESSION &&
-	    !atomic_cmpxchg_acquire(&needs_reclaim, 0, 1))
-		wake_up(&oom_waitq);
-=======
 	int i;
 
 	read_lock(&mm_free_lock);
@@ -296,32 +283,15 @@ void simple_lmk_mm_freed(struct mm_struct *mm)
 		break;
 	}
 	read_unlock(&mm_free_lock);
->>>>>>> cdfdb4e09412f4d0a42f467a961516b9edb8a157
 }
 
 static int simple_lmk_vmpressure_cb(struct notifier_block *nb,
 				    unsigned long pressure, void *data)
 {
-<<<<<<< HEAD
-	int i;
-
-	read_lock(&mm_free_lock);
-	for (i = 0; i < victims_to_kill; i++) {
-		if (victims[i].mm != mm)
-			continue;
-
-		victims[i].mm = NULL;
-		if (atomic_inc_return_relaxed(&nr_killed) == victims_to_kill)
-			complete(&reclaim_done);
-		break;
-	}
-	read_unlock(&mm_free_lock);
-=======
 	if (pressure == 100 && !atomic_cmpxchg_acquire(&needs_reclaim, 0, 1))
 		wake_up(&oom_waitq);
 
 	return NOTIFY_OK;
->>>>>>> cdfdb4e09412f4d0a42f467a961516b9edb8a157
 }
 
 static struct notifier_block vmpressure_notif = {
