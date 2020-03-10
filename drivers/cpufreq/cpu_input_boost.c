@@ -12,6 +12,7 @@
 #include <linux/kthread.h>
 #include <linux/moduleparam.h>
 #include <linux/sched.h>
+#include <linux/sched/sysctl.h>
 
 static unsigned int input_boost_freq_lp __read_mostly =
 	CONFIG_INPUT_BOOST_FREQ_LP;
@@ -173,7 +174,6 @@ void cpu_input_boost_kick_max(unsigned int duration_ms)
 {
 	struct boost_drv *b = &boost_drv_g;
 
-	energy_aware_enable = false;
 	__cpu_input_boost_kick_max(b, duration_ms);
 }
 
@@ -190,8 +190,6 @@ static void max_unboost_worker(struct work_struct *work)
 {
 	struct boost_drv *b = container_of(to_delayed_work(work),
 					   typeof(*b), max_unboost);
-
-	energy_aware_enable = true;
 
 	clear_bit(MAX_BOOST, &b->state);
 	wake_up(&b->boost_waitq);
@@ -237,11 +235,13 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 	/* Unboost when the screen is off */
 	if (test_bit(SCREEN_OFF, &b->state)) {
 		policy->min = get_min_freq(policy);
+		sysctl_sched_energy_aware = 1;
 		return NOTIFY_OK;
 	}
 
 	/* Boost CPU to max frequency for max boost */
 	if (test_bit(MAX_BOOST, &b->state)) {
+		sysctl_sched_energy_aware = 0;
 		policy->min = get_max_boost_freq(policy);
 		return NOTIFY_OK;
 	}
@@ -254,6 +254,9 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 		policy->min = get_input_boost_freq(policy);
 	else
 		policy->min = get_min_freq(policy);
+
+	/* If we are not boosting max for app launch/device wake, enable EAS */
+	sysctl_sched_energy_aware = 1;
 
 	return NOTIFY_OK;
 }
@@ -392,7 +395,7 @@ static int __init cpu_input_boost_init(void)
 		goto unregister_handler;
 	}
 
-	thread = kthread_run(cpu_boost_thread, b, "cpu_boostd");
+	thread = kthread_run_perf_critical(cpu_boost_thread, b, "cpu_boostd");
 	if (IS_ERR(thread)) {
 		ret = PTR_ERR(thread);
 		pr_err("Failed to start CPU boost thread, err: %d\n", ret);
